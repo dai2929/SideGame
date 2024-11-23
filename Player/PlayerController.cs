@@ -164,6 +164,13 @@ public class PlayerController : MonoBehaviour
     //当たり判定のある何かとぶつかったら起こるイベント
     void OnTriggerEnter2D(Collider2D collision)
     {
+        //gptから教えてもらった 新規追加
+        //ゴール後またはゲームオーバー状態では何もしない
+        if (gameState != "playing")
+        {
+            return;
+        }
+
         if(collision.gameObject.tag == "Goal") //当たった相手(collision)のTagがGoalだったら
         {
             Goal(); //ゴールメソッドの発動
@@ -192,6 +199,9 @@ public class PlayerController : MonoBehaviour
 
         gameState = "gameclear";
         GameStop(); //ゲームを停止
+
+        // Rigidbody2Dの物理演算を無効化してゴールしてからも落下しない GPTから教えて貰ったアイデア 新規追加
+        rbody.simulated = false;
     }
 
     public void GameOver()

@@ -12,6 +12,9 @@ public class MovingBlock : MonoBehaviour
     public bool isMoveWhenOn = false; //乗った時にうごくアクションにするかどうか
     public bool isCanMove = true; //アクション中かどうかのフラグ
 
+    //新規追加　GPTより動き続ける機能を追加したくて
+    public bool isAlwaysMoving = false; //常に動き続けるかどうか
+
     Vector3 startPos; //初期位置の記憶
     Vector3 endPos; //ゴール地点
     bool isReverse = false; //移動方向の反転フラグ
@@ -22,7 +25,7 @@ public class MovingBlock : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        startPos  = transform.position; //初期位置の記憶
+        startPos = transform.position; //初期位置の記憶
         endPos = new Vector2(startPos.x + moveX, startPos.y + moveY); //ゴール地点の座標の設定
 
         //もしプレイヤーが乗ってから動くフラグがtrueなら
@@ -36,43 +39,55 @@ public class MovingBlock : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //動いても良いフラグがtrueの場合
-        if(isCanMove)
+        //★新規追加 常時動作フラグが有効な場合は動作を許可
+        if (isAlwaysMoving)
         {
-            float distance = Vector2.Distance(startPos, endPos); //始点からゴール地点までの距離計測
+            isCanMove = true;
+        }
 
-            float ds = distance / times; //1秒あたりの移動距離目標
+        //動いても良いフラグがtrueの場合
+        if (isCanMove)
+        {
+            MoveBlock();
+        }
+    }
 
-            float df = ds * Time.deltaTime; //その時々の1フレームあたりに進むべき移動量
+    //★修正:新規追加 移動処理を関数として切り出し
+    //メソッド化的な？
+    private void MoveBlock()
+    {
+        float distance = Vector2.Distance(startPos, endPos); //始点からゴール地点までの距離計測
 
-            //全体の距離(distance)に対して、1フレームに進んだ距離の割合を蓄積
-            movep += df / distance;
+        float ds = distance / times; //1秒あたりの移動距離目標
 
-            //もし逆方向への移動フラグがtrueなら（反転）
-            if(isReverse)
+        float df = ds * Time.deltaTime; //その時々の1フレームあたりに進むべき移動量
+
+        //全体の距離(distance)に対して、1フレームに進んだ距離の割合を蓄積
+        movep += df / distance;
+
+        //もし逆方向への移動フラグがtrueなら（反転）
+        if (isReverse)
+        {
+            transform.position = Vector2.Lerp(endPos, startPos, movep); //逆方向への移動
+        }
+        else//逆方向フラグがfalseなら（順転）
+        {
+            transform.position = Vector2.Lerp(startPos, endPos, movep); //順方向への移動
+        }
+
+        //移動の割合が100%に届いた＝ゴールに到着したら
+        if (movep >= 1.0f)
+        {
+            movep = 0.0f; //移動の割合はリセット
+            isReverse = !isReverse; //逆方向への移動フラグを反転
+
+            //★変更:常時動作でない場合のみ停止
+            if (!isAlwaysMoving)
             {
-                transform.position = Vector2.Lerp(endPos, startPos, movep); //逆方向への移動
-            }
-            else//逆方向フラグがfalseなら（順転）
-            {
-                transform.position = Vector2.Lerp(startPos,endPos, movep); //順方向への移動
-            } 
-
-            //移動の割合が100%に届いた＝ゴールに到着したら
-            if(movep >= 1.0f)
-            {
-                movep = 0.0f; //移動の割合はリセット
-                isReverse = !isReverse; //逆方向への移動フラグを反転
                 isCanMove = false; //一旦停止
-
-                //乗った時に動くフラグがfalseなのであれば
-                if(isMoveWhenOn == false)
-                {
-                    //時間差で再始動(Moveメソッドをwait秒後に発動）
-                    Invoke("Move", wait);
-                }
+                //時間差で再始動(Moveメソッドをwait秒後に発動）
+                Invoke("Move", wait);
             }
-
         }
     }
 
@@ -92,9 +107,9 @@ public class MovingBlock : MonoBehaviour
     void OnCollisionEnter2D(Collision2D collision)
     {
         //相手がプレイヤーだったら
-        if(collision.gameObject.tag == "Player")
+        if (collision.gameObject.tag == "Player")
         {
-            //プレイヤーの親はMovingBlockという事にする（プレイヤーがブロックの子オブジェクトになる＝ブロックについてくる）
+            //プレイヤーの親はMovingBlockという事にする（プレイヤーがブロックの子オブジェクトになる＝ブロックについてくる）多分これつけないとプレイヤーが置き去りになる
             collision.transform.SetParent(transform);
 
             //もしプレイヤーが乗ってから動くフラグがtrueだった場合
@@ -102,18 +117,18 @@ public class MovingBlock : MonoBehaviour
             {
                 isCanMove = true; //移動を始める
             }
-        }    
+        }
     }
 
-    //何かがブロックから離れた時
+    //何かがブロックから離れた時 ここはブロックにプレイヤーが乗った後親子関係を解除するためのコードかな
     void OnCollisionExit2D(Collision2D collision)
     {
         //相手がプレイヤーだったら
-        if(collision.gameObject.tag == "Player")
+        if (collision.gameObject.tag == "Player")
         {
             //プレイヤーが離れたら親子関係は解除
             collision.transform.SetParent(null);
-        }    
+        }
     }
 
     //移動のシミュレーションをギズモを使って描画
@@ -124,7 +139,7 @@ public class MovingBlock : MonoBehaviour
 
         //記録した初期地点が(0,0,0)だったら
         //ブロックの位置がfromPos
-        if(startPos == Vector3.zero)
+        if (startPos == Vector3.zero)
         {
             fromPos = transform.position;
         }
@@ -134,7 +149,7 @@ public class MovingBlock : MonoBehaviour
         }
 
         //移動の線を描画
-        Gizmos.DrawLine(fromPos,new Vector2(fromPos.x + moveX, fromPos.y + moveY));
+        Gizmos.DrawLine(fromPos, new Vector2(fromPos.x + moveX, fromPos.y + moveY));
 
         //移動の先のブロックの形=自分の形そのもの
         Vector2 size = GetComponent<SpriteRenderer>().size;
