@@ -163,3 +163,5 @@ public class MovingBlock : MonoBehaviour
         Gizmos.DrawWireCube(toPos, new Vector2(size.x, size.y));
     }
 }
+
+//167、203、15，42、55行　新規追加
