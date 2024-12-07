@@ -39,11 +39,11 @@ public class MovingBlock : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //★新規追加 常時動作フラグが有効な場合は動作を許可
-        if (isAlwaysMoving)
-        {
-            isCanMove = true;
-        }
+        ////★新規追加 常時動作フラグが有効な場合は動作を許可
+        //if (isAlwaysMoving)
+        //{
+        //    isCanMove = true;
+        //}
 
         //動いても良いフラグがtrueの場合
         if (isCanMove)
@@ -80,11 +80,9 @@ public class MovingBlock : MonoBehaviour
         {
             movep = 0.0f; //移動の割合はリセット
             isReverse = !isReverse; //逆方向への移動フラグを反転
-
-            //★変更:常時動作でない場合のみ停止
-            if (!isAlwaysMoving)
+            isCanMove = false; //一旦停止
+            if (!isMoveWhenOn)
             {
-                isCanMove = false; //一旦停止
                 //時間差で再始動(Moveメソッドをwait秒後に発動）
                 Invoke("Move", wait);
             }
@@ -128,6 +126,13 @@ public class MovingBlock : MonoBehaviour
         {
             //プレイヤーが離れたら親子関係は解除
             collision.transform.SetParent(null);
+
+            //ここを新規追加↓ 先生から
+            //もしプレイヤーが乗ってから動くフラグがtrueだった場合
+            //if (isMoveWhenOn)
+            //{
+            //    isCanMove = false; //移動を止める
+            //}
         }
     }
 
